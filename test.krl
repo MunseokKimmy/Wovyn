@@ -10,7 +10,7 @@ ruleset wovyn_base {
         __testing = { "queries": [ { "name": "__testing" } ],
                       "events": [ { "domain": "post", "type": "test",
                                   "attrs": [ "temp", "baro" ] } ] }
-        temperature_threshold = 50
+        temperature_threshold = 80
         myPhone = "+14433590071"
         myTwilio = "+14435966495"
       }
@@ -37,7 +37,8 @@ ruleset wovyn_base {
         fired {
             raise wovyn event "threshold_violation"
             attributes {
-                "temperature": event:attr("temperature")
+                "temperature": event:attr("temperature"),
+                "timestamp": event:attr("timestamp")
             } if temperature > temperature_threshold
         }
     }
