@@ -8,16 +8,15 @@ ruleset temperature_store {
                       "events": [ { "domain": "post", "type": "test",
                                   "attrs": [ "temp", "baro" ] } ] }
         temperatures = function() {
-            ent:collected_temperatures;
+            ent:collected_temperatures.defaultsTo([]);
         }
         threshold_violations = function() {
-            ent:collected_violations;
+            ent:collected_violations.defaultsTo([]);
         }
         inrange_temperatures = function() {
             ent:collected_temperatures.difference(ent:collected_violations);
         }
-      }
-
+    }
     rule collect_temperatures {
         select when wovyn new_temperature_reading
         pre {
@@ -26,7 +25,7 @@ ruleset temperature_store {
         }
         always {
             a = {"temperature": temperature, "timestamp": timestamp}
-            ent:collected_temperatures := ent:collected_temperatures.append(a) || [ent:collect_temperatures]
+            ent:collected_temperatures := ent:collected_temperatures.defaultsTo([]).append(a) || [ent:collect_temperatures]
         }
     }
     rule collect_threshold_violations {
@@ -37,7 +36,7 @@ ruleset temperature_store {
         }
         always {
             a = {"temperature": temperature, "timestamp": timestamp}
-            ent:collected_violations := ent:collected_violations.append(a)
+            ent:collected_violations := ent:collected_violations.defaultsTo([]).append(a)
         }
     }
     rule clear_temperatures {
@@ -51,5 +50,6 @@ ruleset temperature_store {
         }
         
     }
+
     
 }
