@@ -1,0 +1,12 @@
+.page-header {
+    width: 100vh;
+}
+.row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+.column {
+    display: flex;
+    flex-direction: column;
+}

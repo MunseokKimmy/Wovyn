@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Temperature</title>
+    <link href="temperature.css" rel="stylesheet">
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular.min.js"></script>
+    <script src="temperature.js"></script>
+    <style type="text/css">
+        span.finished {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body ng-app="timing" ng-controller="MainCtrl">
+    <div class="page-header">
+        <h1>Temperature</h1>
+        <a href="profile.html">Profile</a>
+    </div>
+    <div class="row">
+        <div class="column">
+            <div>
+                <h4>Current Temperature</h4>
+                {{temperatures[temperatures.length-1].temperature}}
+            </div>
+        </div>
+        <div class="ccolumn">
+            <h4>All Temperature Readings</h4>
+            <div class="results" ng-repeat="reading in temperatures">
+                {{reading.temperature}} - {{reading.timestamp}}
+            </div>
+        </div>
+        <div class="column">
+            <h4>All Temperature Violations</h4>
+            <div class="results" ng-repeat="reading in violations">
+                {{reading.temperature}} - {{reading.timestamp}}
+            </div>
+        </div>
+            <!-- <h4>All Inrange Violations</h4>
+                <div class="results" ng-repeat="reading in temperatures">
+                {{reading.temperature}} - {{reading.timestamp}}
+            </div> -->
+    </div>
+</body>
+
+</html>

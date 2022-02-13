@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Profile</title>
+    <link href="profile.css" rel="stylesheet">
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular.min.js"></script>
+    <script src="profile.js"></script>
+    <style type="text/css">
+        span.finished {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body ng-app="timing" ng-controller="MainCtrl">
+    <div class="page-header">
+        <h1>Profile</h1>
+        <a href="temperature.html">Temperatures</a>
+    </div>
+    <div class="row">
+        <div class="column">
+            <div>
+                <h4>Profile</h4>
+            </div>
+            <div>
+                Name: {{profile.name}}
+            </div>
+            <div>
+                Number: {{profile.number}}
+            </div>
+            <div>
+                Location: {{profile.location}}
+            </div>
+            <div>
+                Threshold: {{profile.threshold}}
+            </div>
+        </div>
+        <div class="column">
+            <form ng-submit="updateProfile()" style="margin-top:30px;">
+                <input type="text" ng-model="name" placeholder="name"></input>
+                <input type="text" ng-model="number" placeholder="number" autofocus></input>
+                <input type="text" ng-model="location" placeholder="location" autofocus></input>
+                <input type="text" ng-model="threshold" placeholder="threshold"></input>
+                <button type="submit" focus-input>Update</button>
+            </form>
+        </div>
+            <!-- <h4>All Inrange Violations</h4>
+                <div class="results" ng-repeat="reading in temperatures">
+                {{reading.temperature}} - {{reading.timestamp}}
+            </div> -->
+    </div>
+</body>
+
+</html>
