@@ -1,7 +1,7 @@
 ruleset sensor_profile {
     meta {
-        shares __testing, temperatures, threshold_violations, inrange_temperatures
-        provides temperatures, threshold_violations, inrange_temperatures
+        shares __testing, sensor_profile
+        provides sensor_profile
     }
     global {
         __testing = { "queries": [ { "name": "__testing" } ],

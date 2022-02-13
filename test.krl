@@ -1,6 +1,7 @@
 ruleset wovyn_base {
     meta {
         use module org.twilio.sdk alias sdk
+        use module sensor_profile alias sp
         with 
             accountSID = meta:rulesetConfig{"account_sid"}
             authToken = meta:rulesetConfig{"auth_token"}
@@ -32,7 +33,7 @@ ruleset wovyn_base {
         select when wovyn new_temperature_reading
         pre {
             temperature = event:attr("temperature").klog("attrs")
-            temperature_threshold = temperature_threshold.klog("threshold")
+            temperature_threshold = sp:sensor_profile()["threshold"];
         }
         fired {
             raise wovyn event "threshold_violation"
