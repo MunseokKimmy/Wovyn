@@ -4,9 +4,6 @@ ruleset temperature_store {
         provides temperatures, threshold_violations, inrange_temperatures
     }
     global {
-        __testing = { "queries": [ { "name": "__testing" } ],
-                      "events": [ { "domain": "post", "type": "test",
-                                  "attrs": [ "temp", "baro" ] } ] }
         temperatures = function() {
             ent:collected_temperatures.defaultsTo([]);
         }

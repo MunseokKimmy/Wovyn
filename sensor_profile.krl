@@ -4,9 +4,6 @@ ruleset sensor_profile {
         provides sensor_profile
     }
     global {
-        __testing = { "queries": [ { "name": "__testing" } ],
-                      "events": [ { "domain": "post", "type": "test",
-                                  "attrs": [ "temp", "baro" ] } ] }
         sensor_profile = function() {
             ent:sensor_profile.defaultsTo({"location": "Munseok's Apartment", "name": "temp sensor", "threshold": 80, "number": "+14433590071"});
         }

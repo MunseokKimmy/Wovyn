@@ -1,6 +1,5 @@
 ruleset wovyn_base {
     meta {
-        use module org.twilio.sdk alias sdk
         use module sensor_profile alias sp
         with 
             accountSID = meta:rulesetConfig{"account_sid"}
@@ -8,9 +7,6 @@ ruleset wovyn_base {
         shares __testing
     }
     global {
-        __testing = { "queries": [ { "name": "__testing" } ],
-                      "events": [ { "domain": "post", "type": "test",
-                                  "attrs": [ "temp", "baro" ] } ] }
         temperature_threshold = 80
         myPhone = "+14433590071"
         myTwilio = "+14435966495"
@@ -46,11 +42,8 @@ ruleset wovyn_base {
     rule threshold_notification {
         select when wovyn threshold_violation 
         pre {
-            temperatire = event:attr("temperature").klog("attrs")
+            temperature = event:attr("temperature").klog("attrs")
         }
-            sdk:sendSMS("Temperature violation",
-            myTwilio,
-            )
         
     }
     
