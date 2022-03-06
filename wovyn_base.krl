@@ -1,6 +1,8 @@
 ruleset wovyn_base {
     meta {
         use module sensor_profile alias sp
+        use module io.picolabs.subscription alias subscription
+        use module wovyn_subscription alias ws
         with 
             accountSID = meta:rulesetConfig{"account_sid"}
             authToken = meta:rulesetConfig{"auth_token"}
@@ -41,10 +43,15 @@ ruleset wovyn_base {
     }
     rule threshold_notification {
         select when wovyn threshold_violation 
-        pre {
-            temperature = event:attr("temperature").klog("attrs")
-        }
-        
+        foreach subscription:established() setting (sub)
+            event:send({
+                "eci": sub{"Tx"},
+                "domain":"wovyn", 
+                "type":"threshold_violation",
+                "attrs": {
+                    "temperature": event:attr("temperature") 
+                }
+        })
     }
     
 }

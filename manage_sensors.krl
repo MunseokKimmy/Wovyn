@@ -1,8 +1,13 @@
 ruleset manage_sensors {
     meta {
-        shares nameFromID, showChildren, sensors
-        provides nameFromID, showChildren, sensors
+        shares nameFromID, showChildren, sensors, infoFromSubs, all_temperatures
+        provides nameFromID, showChildren, sensors, infoFromSubs
         use module io.picolabs.wrangler alias wrangler
+        use module io.picolabs.subscription alias subscription
+        use module org.twilio.sdk alias sdk
+        with 
+            accountSID = meta:rulesetConfig{"account_sid"}
+            authToken = meta:rulesetConfig{"auth_token"}
     }
     global {
         nameFromID = function(name) {
@@ -13,6 +18,9 @@ ruleset manage_sensors {
         }
         sensors = function() {
           ent:sensors
+        }
+        infoFromSubs = function() {
+          ent:subs
         }
         all_temperatures = function() {
           ent:all_temperatures
@@ -26,6 +34,13 @@ ruleset manage_sensors {
           "allow": [ { "rid": "*", "name": "*" } ],
           "deny": []
         }
+        wellKnown_Rx = function(name) {
+          eci = ent:sensors{[name,"eci"]}
+          eci.isnull() => null
+            | ctx:query(eci,"io.picolabs.subscription","wellKnown_Rx"){"id"}
+        }
+        myPhone = "+14433590071"
+        myTwilio = "+14435966495"
     }
     rule sensor_already_exists {
         select when sensor new_sensor
@@ -53,11 +68,13 @@ ruleset manage_sensors {
       select when sensor needs_initialization
       always {
         ent:sensors := {}
+        ent:subs := {}
+        ent:all_temperatures := {}
       }
     }
     rule store_new_sensor {
         select when wrangler new_child_created
-        foreach ["temperature_store", "sensor_profile", "wovyn_base", "io.picolabs.wovyn.emitter"] setting (x) 
+        foreach ["temperature_store", "sensor_profile", "io.picolabs.wovyn.emitter", "wovyn_subscription", "wovyn_base"] setting (x) 
         pre {
           the_sensor = {"eci": event:attr("eci")}
           sensor_name = event:attr("name")
@@ -70,6 +87,7 @@ ruleset manage_sensors {
               "attrs": {
                 "absoluteURL": meta:rulesetURI,
                 "rid": x,
+                "wellKnown_Rx": "ckzz0zzoc015hx0u0bdylgwr3",
                 "config": {},
                 "sensor_name": sensor_name
               }
@@ -123,5 +141,43 @@ ruleset manage_sensors {
       pre {
 
       }
+    }
+
+    rule message {
+      select when wovyn threshold_violation
+      pre {
+        temperature = event:attr("temperature").klog("attrs")
+      }
+        sdk:sendSMS("Temperature violation " + temperature,
+        myTwilio, //myPhone
+        )
+
+    }
+    /* Our rule that reacts to a new subscription being added and records it in an entity variable */
+    rule newSubAdded {
+      select when wrangler subscription_added
+      pre {
+        subID = event:attr("Id").klog(event:attrs)                // The ID of the subscription is given as an attribute
+        subInfo = event:attr("bus")             // The relevant subscription info is given in the "bus" attribute
+        name = event:attr("name")
+      }
+      always {
+        ent:subs{subID} := {"name": name, "subInfo": subInfo}              // Record the sub info in this ruleset so we can use it
+      }
+    }
+
+    rule get_all_data {
+      select when wovyn get_all_data
+      foreach subscription:established() setting (sub)
+      pre {
+        peerChannel = sub{"Tx"}                                                                       // Get the "Tx" channel to send our query to
+        peerHost = (sub{"Tx_host"} || meta:host)  
+        temperatures = wrangler:skyQuery(peerChannel, "temperature_store", "temperatures", null, peerHost)  
+      }
+      always {
+        ent:all_temperatures := ent:all_temperatures.defaultsTo([]).append({"Wovyn temperatures": temperatures})
+      }
+      
+
     }
 }
