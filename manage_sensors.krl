@@ -1,6 +1,6 @@
 ruleset manage_sensors {
     meta {
-        shares nameFromID, showChildren, sensors, infoFromSubs, all_temperatures
+        shares nameFromID, showChildren, sensors, infoFromSubs, all_temperatures, last_five_reports, report_id, all_reports
         provides nameFromID, showChildren, sensors, infoFromSubs
         use module io.picolabs.wrangler alias wrangler
         use module io.picolabs.subscription alias subscription
@@ -24,6 +24,17 @@ ruleset manage_sensors {
         }
         all_temperatures = function() {
           ent:all_temperatures
+        }
+        last_five_reports = function() {
+          a = ent:all_reports.values()
+          last_five = a.slice(a.length()-5, a.length()-1)
+          last_five
+        }
+        all_reports = function() {
+          ent:all_reports
+        }
+        report_id = function() {
+          ent:report_id
         }
         threshold_default = 77
         eventPolicy = {
@@ -70,6 +81,14 @@ ruleset manage_sensors {
         ent:sensors := {}
         ent:subs := {}
         ent:all_temperatures := {}
+        ent:report_id := 0
+      }
+    }
+    rule reset_reports {
+      select when reports reset_reports
+      always {
+        ent:report_id := 0
+        ent:all_reports := {}
       }
     }
     rule store_new_sensor {
@@ -177,7 +196,69 @@ ruleset manage_sensors {
       always {
         ent:all_temperatures := ent:all_temperatures.defaultsTo([]).append({"Wovyn temperatures": temperatures})
       }
-      
+    }
 
+    rule request_report {
+      select when wovyn request_report
+      foreach subscription:established() setting (sub)
+      pre {
+        rcn = ent:report_id.defaultsTo(1)
+        peerChannel = sub{"Tx"}                                                                       // Get the "Tx" channel to send our query to
+        thisChannel = sub{"Rx"}
+      }
+      if (not rcn.isnull())
+      then event:send(
+        {   "eci": peerChannel,
+            "eid": "report_request",
+            "domain": "sensor", "type": "get_report",
+            "attrs": {
+              "id": rcn,
+              "managerCI": thisChannel,
+              "sensorCI": peerChannel
+            }
+        })
+      fired {
+        ent:report_id := ent:report_id + 1 on final
+        ent:current_report := []
+      }
+    }
+
+    rule catch_reports {
+      select when reports sensor_report
+      pre {
+        data = event:attr("data")
+        correlationID = event:attr("correlationID")
+        sensor = event:attr("sensor")
+        updated_reports = (ent:all_reports{[correlationID, "reports"]}).defaultsTo([]).append(event:attr("data").decode());
+      }
+      noop()
+      always {
+        ent:all_reports{[correlationID, "reports"]} := updated_reports
+        raise reports event "report_added"
+        attributes {    
+          "report_correlation_number": correlationID
+        }
+      }
+
+    }
+
+    rule check_status {
+      select when reports report_added
+      pre {
+        rcn = event:attr("report_correlation_number")
+        sensor_count = ent:subs.length()
+        number_of_reports_received = (ent:all_reports{[rcn, "reports"]}).length()
+      }
+      if (sensor_count <= number_of_reports_received) then noop()
+      fired {
+        ent:all_reports{[rcn, "reporting sensors"]} := sensor_count
+        log info "report ready";
+        raise reports event "report_ready"
+        attributes {
+          "report_correlation_number": rcn
+        }
+      } else {
+        log info "we're still waiting for " + (sensor_count - number_of_reports_received) + " reports on #{rcn}";
+      }
     }
 }

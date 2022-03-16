@@ -45,7 +45,30 @@ ruleset temperature_store {
             clear ent:collected_violations
             clear ent:collected_temperatures
         }
-        
+    }
+
+    rule create_report {
+        select when sensor get_report
+        pre {
+            correlationID = event:attr("id")
+            managerChannel = event:attr("managerCI")
+            the_sensor = event:attr("sensorCI")
+            lastTemperatureReading = temperatures()[temperatures().length() - 1]
+        }
+        if (not correlationID.isnull())
+            then event:send(
+                {   "eci": managerChannel,
+                    "eid": "create report",
+                    "domain": "reports", "type": "sensor_report",
+                    "attrs": {
+                        "data": lastTemperatureReading, 
+                        "correlationID": correlationID,
+                        "sensor": the_sensor,
+                    }
+                })
+        fired {
+
+        }
     }
 
     
