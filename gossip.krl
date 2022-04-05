@@ -4,8 +4,8 @@ ruleset gossip {
     use module io.picolabs.subscription alias subscription
     use module io.picolabs.wrangler alias wrangler
 
-    shares smart_tracker, scheduled, lastReading, data, name, sequenceNumber, state, ids, getMessage,sumNodeInfo, getNodeInNeed, getIdKeys, chooseMessageRandomly, mostRecentReading
-    provides smart_tracker, scheduled, lastReading, data, name, sequenceNumber, state, ids, getMessage,sumNodeInfo, getNodeInNeed, getIdKeys, chooseMessageRandomly, mostRecentReading
+    shares smart_tracker, scheduled, lastReading, data, name, sequenceNumber, state, ids, getMessage,sumNodeInfo, getNodeInNeed, getIdKeys, chooseMessageRandomly, mostRecentReading, test
+    provides smart_tracker, scheduled, lastReading, data, name, sequenceNumber, state, ids, getMessage,sumNodeInfo, getNodeInNeed, getIdKeys, chooseMessageRandomly, mostRecentReading, test
   }
   global {
     smart_tracker = function() {
@@ -51,10 +51,16 @@ ruleset gossip {
     getNodeInNeed = function(){
        keys = ent:smart_tracker.keys()
        sums = keys.map(function(x){sumNodeInfo(x)})
-       lowestSum = sums.sort().head()
+       lowestSum = sums.sort("numeric").head()
        index = sums.index(lowestSum)
        nodeInNeed = index > -1 && (keys.length() == ent:ids.length()) => keys[index] | getIdKeys(keys.length())
        nodeInNeed
+    }
+    test = function() {
+      keys = ent:smart_tracker.keys()
+      sums = keys.map(function(x){sumNodeInfo(x)})
+      lowestSum = sums.sort()
+      sums
     }
     sumNodeInfo = function(name) {
       values = ent:smart_tracker{name}.values()
