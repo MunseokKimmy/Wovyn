@@ -19,7 +19,7 @@ ruleset io.picolabs.wovyn.emitter {
   
       operating_state = function(){ent:emitter_state};
   
-      default_heartbeat_period = 5; //seconds
+      default_heartbeat_period = 15; //seconds
   
       my_rid = function(){meta:rid};
   

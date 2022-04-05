@@ -4,7 +4,7 @@ ruleset manage_sensors {
         provides nameFromID, showChildren, sensors, infoFromSubs
         use module io.picolabs.wrangler alias wrangler
         use module io.picolabs.subscription alias subscription
-        use module org.twilio.sdk alias sdk
+        //use module org.twilio.sdk alias sdk
         with 
             accountSID = meta:rulesetConfig{"account_sid"}
             authToken = meta:rulesetConfig{"auth_token"}
@@ -93,7 +93,7 @@ ruleset manage_sensors {
     }
     rule store_new_sensor {
         select when wrangler new_child_created
-        foreach ["temperature_store", "sensor_profile", "io.picolabs.wovyn.emitter", "wovyn_subscription", "wovyn_base"] setting (x) 
+        foreach ["temperature_store", "io.picolabs.wovyn.emitter", "wovyn_subscription", "wovyn_base", "gossip"] setting (x) 
         pre {
           the_sensor = {"eci": event:attr("eci")}
           sensor_name = event:attr("name")
@@ -162,16 +162,16 @@ ruleset manage_sensors {
       }
     }
 
-    rule message {
-      select when wovyn threshold_violation
-      pre {
-        temperature = event:attr("temperature").klog("attrs")
-      }
-        sdk:sendSMS("Temperature violation " + temperature,
-        myTwilio, //myPhone
-        )
+    // rule message {
+    //   select when wovyn threshold_violation
+    //   pre {
+    //     temperature = event:attr("temperature").klog("attrs")
+    //   }
+    //     sdk:sendSMS("Temperature violation " + temperature,
+    //     myTwilio, //myPhone
+    //     )
 
-    }
+    // }
     /* Our rule that reacts to a new subscription being added and records it in an entity variable */
     rule newSubAdded {
       select when wrangler subscription_added

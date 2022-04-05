@@ -1,7 +1,7 @@
 ruleset temperature_store {
     meta {
-        shares __testing, temperatures, threshold_violations, inrange_temperatures
-        provides temperatures, threshold_violations, inrange_temperatures
+        shares __testing, temperatures, threshold_violations, inrange_temperatures, lastTemperature
+        provides temperatures, threshold_violations, inrange_temperatures, lastTemperature
     }
     global {
         temperatures = function() {
@@ -12,6 +12,9 @@ ruleset temperature_store {
         }
         inrange_temperatures = function() {
             ent:collected_temperatures.difference(ent:collected_violations);
+        }
+        lastTemperature = function() {
+            ent:collected_temperatures.defaultsTo([])[ent:collected_temperatures.length() - 1]
         }
     }
     rule collect_temperatures {

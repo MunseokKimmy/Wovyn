@@ -75,7 +75,7 @@ ruleset wovyn_subscription {
           my_role = event:attr("Rx_role")
           their_role = event:attr("Tx_role")
         }
-        if my_role=="sensor" && their_role=="collection" then noop()
+        if (my_role=="sensor" && their_role=="collection") || (my_role=="node" && their_role=="node") then noop()
         fired {
           raise wrangler event "pending_subscription_approval"
             attributes event:attrs

@@ -41,17 +41,17 @@ ruleset wovyn_base {
             } if temperature > temperature_threshold
         }
     }
-    rule threshold_notification {
-        select when wovyn threshold_violation 
-        foreach subscription:established() setting (sub)
-            event:send({
-                "eci": sub{"Tx"},
-                "domain":"wovyn", 
-                "type":"threshold_violation",
-                "attrs": {
-                    "temperature": event:attr("temperature") 
-                }
-        })
-    }
+    // rule threshold_notification {
+    //     select when wovyn threshold_violation 
+    //     foreach subscription:established() setting (sub)
+    //         event:send({
+    //             "eci": sub{"Tx"},
+    //             "domain":"wovyn", 
+    //             "type":"threshold_violation",
+    //             "attrs": {
+    //                 "temperature": event:attr("temperature") 
+    //             }
+    //     })
+    // }
     
 }
