@@ -5,7 +5,7 @@ ruleset sensor_profile {
     }
     global {
         sensor_profile = function() {
-            ent:sensor_profile.defaultsTo({"location": "Munseok's Apartment", "name": "temp sensor", "threshold": 80, "number": "+14433590071"});
+            ent:sensor_profile.defaultsTo({"location": "Munseok's Apartment", "name": "temp sensor", "threshold": 75, "number": "+14433590071"});
         }
     }
 

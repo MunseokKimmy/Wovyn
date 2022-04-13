@@ -1,11 +1,14 @@
 ruleset gossip {
   meta {
     use module temperature_store alias ts
+    use module sensor_profile alias sp
     use module io.picolabs.subscription alias subscription
     use module io.picolabs.wrangler alias wrangler
 
-    shares smart_tracker, scheduled, lastReading, data, name, sequenceNumber, state, ids, getMessage,sumNodeInfo, getNodeInNeed, getIdKeys, chooseMessageRandomly, mostRecentReading, test
-    provides smart_tracker, scheduled, lastReading, data, name, sequenceNumber, state, ids, getMessage,sumNodeInfo, getNodeInNeed, getIdKeys, chooseMessageRandomly, mostRecentReading, test
+    shares smart_tracker, scheduled, lastReading, data, name, sequenceNumber, state, ids, getMessage,sumNodeInfo, getNodeInNeed, getIdKeys, 
+    chooseMessageRandomly, mostRecentReading, test, violationState, violationSum, violationReport, checkForViolation, getNewViolationState,getMostRecentStatus
+    provides smart_tracker, scheduled, lastReading, data, name, sequenceNumber, state, ids, getMessage,sumNodeInfo, getNodeInNeed, getIdKeys, 
+    chooseMessageRandomly, mostRecentReading, test, violationState, violationSum, violationReport, checkForViolation, getNewViolationState,getMostRecentStatus
   }
   global {
     smart_tracker = function() {
@@ -77,6 +80,44 @@ ruleset gossip {
       messageType
     }
 
+    violationState = function() {
+      ent:violationState.defaultsTo({});
+    }
+
+    violationSum = function() {
+      values = ent:violationState.values()
+      sum = values.reduce(function(a, i){a + i})
+      sum
+    }
+
+    violationReport = function() {
+      violationSum()
+    }
+
+    checkForViolation = function() {
+      violation = sp:sensor_profile(){"threshold"} <= lastReading()
+      violation 
+    }
+
+    getMostRecentStatus = function() {
+      ent:recentStatus
+      //false = not experiencing, true = experiencing
+    }
+
+    getNewViolationState = function() {
+      currentViolation = checkForViolation() 
+      //true if they are matching/ false if they are not matching
+      matching = getMostRecentStatus() == currentViolation
+      newState = matching => 0 | notMatching(currentViolation)
+      newState
+    }
+
+    notMatching = function(currentViolation) {
+      newState = currentViolation => 1 | -1
+      newState
+    }
+
+
   }
   rule initialize_sensor {
     select when gossip initialize_sensor
@@ -138,18 +179,23 @@ ruleset gossip {
     if m == "Rumor" then noop()
     fired { //send your own rumor data
       raise gossip event "get_own_sensor_data"
+      raise gossip event "get_last_reading"
       raise gossip event "send_rumor"
       attributes { 
         "eci": peerChannel,
         "messagesToSend": [mostRecentReading()],
         "messageFrom": nodeInNeed
       }
-    }
-    else { //send a seen message
-      raise gossip event "send_seen"
+      raise gossip event "prepare_violation_rumor"
       attributes {
         "eci": peerChannel
       }
+    }
+    else { //send a seen message
+      // raise gossip event "send_seen"
+      // attributes {
+      //   "eci": peerChannel
+      // }
     }
   }
   rule get_own_sensor_data {
@@ -165,7 +211,6 @@ ruleset gossip {
       ent:data{messageID} := newData
       ent:sequenceNumber := sequenceNumber + 1
       ent:state{name} := sequenceNumber
-      
     }
   }
   rule get_last_reading {
@@ -201,6 +246,10 @@ ruleset gossip {
       ent:data := {}
       ent:state := {}
       ent:ids := {}
+      ent:violationState := {}
+      ent:violationState{name} := 0
+      ent:recentStatus := false
+      ent:violationReport := 0
       ent:sequenceNumber := 1
       raise gossip event "get_own_sensor_data"
     }
@@ -234,6 +283,66 @@ ruleset gossip {
     }
   }
 
+  rule prepare_violation_rumor {
+    select when gossip prepare_violation_rumor
+    pre {
+      peerChannel = event:attr("eci")
+      newViolationState = getNewViolationState()
+    }
+    always {
+      ent:violationState{ent:name} := newViolationState
+      ent:recentStatus := newViolationState > 0 => newViolationState == 1 | newViolationState == -1
+      raise gossip event "send_violation_rumor"
+      attributes {
+        "eci": peerChannel,
+      }
+    }
+  }
+
+  rule send_violation_rumor {
+    select when gossip send_violation_rumor
+    pre {
+      stateToSend = ent:violationState
+      peerChannel = event:attr("eci")
+    }
+    event:send(
+      {
+        "eci": peerChannel,
+        "eid": "rumor",
+        "domain": "gossip", "type": "violation_rumor",
+        "attrs": {
+          "state": stateToSend
+        }
+      }
+    )
+  }
+  rule gossip_violation_rumor {
+    select when gossip violation_rumor
+    pre {
+      sentState = event:attr("state")
+    }
+    always {
+      raise gossip event "check_violation_state"
+      attributes {
+        "state": sentState
+      }
+    }
+  }
+
+
+  rule check_violation_state {
+    select when gossip check_violation_state
+    foreach event:attr("state").keys() setting (key)
+    pre {
+      newValue = event:attr("state"){key}
+      currentValue = ent:violationState{key}
+    }
+    if currentValue != null || newValue != currentValue then noop()
+    fired {
+      ent:violationState{key} := newValue
+      ent:violationReport := violationSum()
+    }
+  }
   rule gossip_seen {
     select when gossip seen
     pre {
