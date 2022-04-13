@@ -192,10 +192,10 @@ ruleset gossip {
       }
     }
     else { //send a seen message
-      // raise gossip event "send_seen"
-      // attributes {
-      //   "eci": peerChannel
-      // }
+      raise gossip event "send_seen"
+      attributes {
+        "eci": peerChannel
+      }
     }
   }
   rule get_own_sensor_data {
@@ -247,7 +247,7 @@ ruleset gossip {
       ent:state := {}
       ent:ids := {}
       ent:violationState := {}
-      ent:violationState{name} := 0
+      ent:violationState{ent:name} := 0
       ent:recentStatus := false
       ent:violationReport := 0
       ent:sequenceNumber := 1
